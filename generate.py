@@ -11,7 +11,7 @@ a {length} narration in English. Reply ONLY with JSON using these
 keys: title, description, hashtags (list), script, keywords
 (list of 3-6 stock footage search terms)."""
     r = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.8-flash",
         contents=prompt,
         config={"response_mime_type": "application/json"},
     )

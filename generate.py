@@ -1,9 +1,32 @@
-import os, sys, json, time
+import os, sys, json, time, random
 from google import genai
 
 client = genai.Client(api_key=os.environ["GEMINI_KEY"])
 PREFERRED = "gemini-3.8-flash"
 BAD = ("image", "tts", "live", "audio", "embedding", "robotics", "computer")
+HISTORY = "topics.json"
+
+CATEGORIES = [
+    "black holes and extreme gravity", "planets and moons of our solar system",
+    "stars, supernovae and galaxies", "the human body", "physics paradoxes",
+    "space missions and astronauts", "strange chemistry and materials",
+    "deep ocean and Earth science", "time, light and relativity",
+    "the origin and fate of the universe", "alien life and exoplanets",
+    "animals with surprising abilities", "dinosaurs and ancient Earth",
+    "the human brain and sleep", "famous scientists and discoveries",
+]
+ANGLES = [
+    "a shocking number or scale", "a common myth that is wrong",
+    "something that sounds fake but is true", "a what-if scenario",
+    "a recent scientific discovery", "a mystery nobody has solved yet",
+    "a comparison that blows the mind",
+]
+
+def load_history():
+    try:
+        return json.load(open(HISTORY))
+    except Exception:
+        return []
 
 def get_models():
     names = [PREFERRED]
@@ -20,12 +43,30 @@ def get_models():
     return names
 
 def make(kind):
+    history = load_history()
+    past = [h["topic"] for h in history][-80:]
+    category = random.choice(CATEGORIES)
+    angle = random.choice(ANGLES)
     length = "about 900 words" if kind == "long" else "about 120 words"
+    avoid = "; ".join(past) if past else "none yet"
     prompt = f"""You run a YouTube channel called Cosmic Bits about
-space and science facts. Pick a fresh, surprising topic and write
-a {length} narration in English. Reply ONLY with JSON using these
-keys: title, description, hashtags (list), script, keywords
-(list of 3-6 stock footage search terms)."""
+space and science facts. Write a {length} narration in English.
+
+Topic area: {category}. Angle: {angle}.
+Topics already covered, DO NOT repeat or closely resemble any of them: {avoid}.
+
+Rules for the narration:
+- The FIRST sentence must be a powerful hook that grabs attention in
+  under 3 seconds (a shocking claim or an intriguing question).
+- The LAST sentence must be a memorable punchline or mind-blowing
+  closing thought, followed by a short call to action such as
+  "Follow Cosmic Bits for more cosmic secrets."
+- Keep the middle fast-paced and easy to understand.
+- Every fact must be real and accurate.
+
+Reply ONLY with JSON using these keys: topic (3-8 words naming the
+specific subject), title, description, hashtags (list), script,
+keywords (list of 3-6 stock footage search terms)."""
     models = get_models()
     for rnd in range(3):
         for model in models:
@@ -36,7 +77,12 @@ keys: title, description, hashtags (list), script, keywords
                     config={"response_mime_type": "application/json"},
                 )
                 data = json.loads(r.text)
+                if data.get("topic", "").strip().lower() in [p.lower() for p in past]:
+                    print("Argomento già usato, riprovo")
+                    continue
                 print("Riuscito con", model)
+                history.append({"topic": data["topic"], "kind": kind})
+                json.dump(history[-300:], open(HISTORY, "w"), indent=2)
                 return data
             except Exception as e:
                 print(f"{model} fallito: {str(e)[:150]}")

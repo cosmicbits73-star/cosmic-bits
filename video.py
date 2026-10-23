@@ -5,6 +5,7 @@ W, H = (1080, 1920) if kind == "short" else (1920, 1080)
 data = json.load(open("out.json"))
 key = os.environ["PIXABAY_KEY"]
 CLIP = 5
+HITS = 3 if kind == "short" else 6
 
 def run(cmd):
     subprocess.run(cmd, check=True)
@@ -25,7 +26,7 @@ def search(q):
 
 urls = []
 for kw in data["keywords"] + ["space", "galaxy", "science"]:
-    for h in search(kw)[:3]:
+    for h in search(kw)[:HITS]:
         v = h["videos"].get("medium") or h["videos"]["small"]
         if v["url"] and v["url"] not in urls:
             urls.append(v["url"])
@@ -59,18 +60,26 @@ with open("list.txt", "w") as f:
     for p in seq:
         f.write(f"file '{p}'\n")
 
+margin = 70 if kind == "short" else 15
+style = ("FontName=DejaVu Sans,Bold=1,FontSize=12,"
+         "PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,"
+         f"BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV={margin}")
+subs = f"subtitles=subs.srt:force_style='{style}'" if os.path.exists("subs.srt") else None
+font = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
 cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
        "-i", "list.txt", "-i", "voice.mp3"]
 if os.path.exists("assets/logo.png"):
-    cmd += ["-i", "assets/logo.png", "-filter_complex",
-            f"[2:v]scale={W // 5}:-1[lg];[0:v][lg]overlay=W-w-30:30[v]",
+    cmd += ["-i", "assets/logo.png"]
+    first = f"[0:v]{subs}[s];" if subs else "[0:v]null[s];"
+    cmd += ["-filter_complex",
+            f"{first}[2:v]scale={W // 5}:-1[lg];[s][lg]overlay=W-w-30:30[v]",
             "-map", "[v]", "-map", "1:a"]
 else:
-    font = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    cmd += ["-vf", f"drawtext=fontfile={font}:text='COSMIC BITS':"
-            f"fontcolor=white:fontsize={H // 28}:borderw=3:"
-            f"x=w-tw-40:y=40",
-            "-map", "0:v", "-map", "1:a"]
+    brand = (f"drawtext=fontfile={font}:text='COSMIC BITS':"
+             f"fontcolor=white:fontsize={H // 28}:borderw=3:x=w-tw-40:y=40")
+    vf = f"{subs},{brand}" if subs else brand
+    cmd += ["-vf", vf, "-map", "0:v", "-map", "1:a"]
 cmd += ["-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-shortest", "video.mp4"]
 run(cmd)

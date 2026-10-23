@@ -18,7 +18,7 @@ jobs:
       - run: python generate.py short
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
-      - run: python voice.py
+      - run: python voice.py short
       - run: python video.py short
         env:
           PIXABAY_KEY: ${{ secrets.PIXABAY_KEY }}
@@ -36,6 +36,13 @@ jobs:
           git commit -m "Aggiorna storico argomenti" || echo "niente da salvare"
           git pull --rebase
           git push
+      - uses: actions/upload-artifact@v4
+        with:
+          name: risultato
+          path: |
+            out.json
+            video.mp4
+            subs.srt
       - uses: actions/upload-artifact@v4
         with:
           name: risultato

@@ -8,14 +8,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install google-genai edge-tts
+      - run: pip install google-genai edge-tts requests
       - run: python generate.py short
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
       - run: python voice.py
+      - run: python video.py short
+        env:
+          PIXABAY_KEY: ${{ secrets.PIXABAY_KEY }}
       - uses: actions/upload-artifact@v4
         with:
           name: risultato
           path: |
             out.json
-            voice.mp3
+            video.mp4

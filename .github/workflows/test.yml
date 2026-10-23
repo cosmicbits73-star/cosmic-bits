@@ -22,6 +22,12 @@ jobs:
       - run: python video.py short
         env:
           PIXABAY_KEY: ${{ secrets.PIXABAY_KEY }}
+      - name: Pubblica su YouTube
+        run: python upload.py short private
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
       - name: Salva storico argomenti
         run: |
           git config user.name "github-actions"

@@ -48,10 +48,9 @@ def make(kind):
     category = random.choice(CATEGORIES)
     angle = random.choice(ANGLES)
     length = "about 900 words" if kind == "long" else "about 120 words"
-    nk = 14 if kind == "long" else 6
     avoid = "; ".join(past) if past else "none yet"
     prompt = f"""You run a YouTube channel called Cosmic Bits about
-space and science facts. Write a {length} narration in English.
+space and science facts. Write a narration in English, {length} in total.
 
 Topic area: {category}. Angle: {angle}.
 Topics already covered, DO NOT repeat or closely resemble any of them: {avoid}.
@@ -66,17 +65,19 @@ Rules for the narration:
 - Every fact must be real and accurate.
 
 Reply ONLY with JSON using these keys: topic (3-8 words naming the
-specific subject), title, description, hashtags (list), script,
-keywords.
+specific subject), title, description, hashtags (list), segments.
 
-The "keywords" list must contain exactly {nk} items, ordered in the same
-order in which the subjects appear in the narration. Each keyword is 1 or
-2 simple English words naming something that can be FILMED or ANIMATED and
-that is common in free stock video libraries. Good examples: galaxy,
-nebula, astronaut, rocket launch, microscope, ocean waves, volcano,
-human brain, lightning, earth from space, laboratory, jellyfish. Never use
-rare scientific names or abstract ideas (use "microscope" instead of
-"tardigrade", "galaxy" instead of "dark matter")."""
+"segments" is the whole narration split into consecutive parts, in
+order. Each part is an object {{"text": "...", "keyword": "..."}}.
+- "text" is one or two COMPLETE sentences (about 12 to 25 words).
+- "keyword" is 1 or 2 simple English words naming something that can be
+  FILMED or ANIMATED, common in free stock video libraries, and that
+  matches exactly what that text is talking about. Good examples:
+  galaxy, nebula, astronaut, rocket launch, microscope, ocean waves,
+  volcano, human brain, lightning, earth from space, laboratory,
+  jellyfish. Never use rare scientific names or abstract ideas (use
+  "microscope" instead of "tardigrade").
+Read together, the texts form the complete narration."""
     models = get_models()
     for rnd in range(3):
         for model in models:
@@ -87,6 +88,16 @@ rare scientific names or abstract ideas (use "microscope" instead of
                     config={"response_mime_type": "application/json"},
                 )
                 data = json.loads(r.text)
+                segs = [s for s in (data.get("segments") or [])
+                        if isinstance(s, dict)
+                        and str(s.get("text", "")).strip()
+                        and str(s.get("keyword", "")).strip()]
+                if len(segs) < 2:
+                    print("Segmenti mancanti, riprovo")
+                    continue
+                data["segments"] = segs
+                data["script"] = " ".join(s["text"].strip() for s in segs)
+                data["keywords"] = [s["keyword"].strip() for s in segs]
                 if data.get("topic", "").strip().lower() in [p.lower() for p in past]:
                     print("Argomento già usato, riprovo")
                     continue
@@ -106,4 +117,4 @@ if __name__ == "__main__":
     data = make(sys.argv[1])
     json.dump(data, open("out.json", "w"), indent=2)
     print(data["title"])
-    print("Parole chiave:", data.get("keywords"))
+    print("Segmenti:", len(data["segments"]))

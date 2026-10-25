@@ -1,11 +1,11 @@
-import os, sys, json, subprocess, requests
+import os, sys, json, math, subprocess, requests
 
 kind = sys.argv[1]
 W, H = (1080, 1920) if kind == "short" else (1920, 1080)
 data = json.load(open("out.json"))
 key = os.environ["PIXABAY_KEY"]
 CLIP = 5
-HITS = 3 if kind == "short" else 6
+GENERIC = ["space", "galaxy", "science"]
 
 def run(cmd):
     subprocess.run(cmd, check=True)
@@ -17,38 +17,66 @@ def duration(path):
     return float(out)
 
 voice_len = duration("voice.mp3") + 0.5
+need = math.ceil(voice_len / CLIP)
 
 def search(q):
     r = requests.get("https://pixabay.com/api/videos/",
-        params={"key": key, "q": q, "per_page": 10}, timeout=30)
+        params={"key": key, "q": q, "per_page": 20, "safesearch": "true"},
+        timeout=30)
     r.raise_for_status()
     return r.json().get("hits", [])
 
-urls = []
-for kw in data["keywords"] + ["space", "galaxy", "science"]:
-    for h in search(kw)[:HITS]:
-        v = h["videos"].get("medium") or h["videos"]["small"]
-        if v["url"] and v["url"] not in urls:
-            urls.append(v["url"])
+def clip_url(h):
+    v = h["videos"].get("medium") or h["videos"].get("small")
+    return v["url"] if v and v.get("url") else None
+
+def pick(q, count, seen):
+    hits = search(q)
+    if not hits and " " in q:
+        hits = search(q.split()[-1])
+    got = []
+    for h in hits:
+        u = clip_url(h)
+        if u and u not in seen:
+            seen.add(u)
+            got.append(u)
+            if len(got) >= count:
+                break
+    return got
+
+kws = [k.strip() for k in data["keywords"] if k.strip()] or GENERIC
+per = max(1, math.ceil(need / len(kws)))
+seen, urls = set(), []
+for kw in kws:
+    found = pick(kw, per, seen)
+    print(f"{kw}: {len(found)} clip")
+    urls += found
+for kw in GENERIC:
+    if len(urls) >= need:
+        break
+    urls += pick(kw, need - len(urls), seen)
+print("Clip trovate:", len(urls), "su", need, "necessarie")
 
 os.makedirs("clips", exist_ok=True)
-parts, total = [], 0
-for i, u in enumerate(urls):
-    if total >= voice_len:
-        break
+parts = []
+for i, u in enumerate(urls[:need]):
     raw, out = f"clips/raw{i}.mp4", f"clips/c{i}.mp4"
-    with open(raw, "wb") as f:
-        f.write(requests.get(u, timeout=60).content)
-    run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-t", str(CLIP),
-         "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,"
-                f"crop={W}:{H},fps=30,setsar=1",
-         "-an", "-c:v", "libx264", "-preset", "veryfast",
-         "-pix_fmt", "yuv420p", out])
-    parts.append(out)
-    total += duration(out)
+    try:
+        resp = requests.get(u, timeout=60)
+        resp.raise_for_status()
+        with open(raw, "wb") as f:
+            f.write(resp.content)
+        run(["ffmpeg", "-y", "-loglevel", "error", "-i", raw, "-t", str(CLIP),
+             "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,"
+                    f"crop={W}:{H},fps=30,setsar=1",
+             "-an", "-c:v", "libx264", "-preset", "veryfast",
+             "-pix_fmt", "yuv420p", out])
+        parts.append(out)
+    except Exception as e:
+        print("Clip saltata:", e)
 
 if not parts:
-    raise SystemExit("Nessuna clip trovata")
+    raise SystemExit("Nessuna clip utilizzabile")
 
 seq, t, j = [], 0, 0
 while t < voice_len:
@@ -69,11 +97,12 @@ font = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
        "-i", "list.txt", "-i", "voice.mp3"]
-if os.path.exists("assets/logo.png"):
-    cmd += ["-i", "assets/logo.png"]
-    first = f"[0:v]{subs}[s];" if subs else "[0:v]null[s];"
-    cmd += ["-filter_complex",
-            f"{first}[2:v]scale={W // 5}:-1[lg];[s][lg]overlay=W-w-30:30[v]",
+if os.path.exists("logo.png"):
+    lw = 250 if kind == "short" else 170
+    pos = "40:150" if kind == "short" else "W-w-40:40"
+    first = f"[0:v]{subs}[s]" if subs else "[0:v]null[s]"
+    cmd += ["-i", "logo.png", "-filter_complex",
+            f"{first};[2:v]scale={lw}:-1,format=rgba[lg];[s][lg]overlay={pos}[v]",
             "-map", "[v]", "-map", "1:a"]
 else:
     brand = (f"drawtext=fontfile={font}:text='COSMIC BITS':"

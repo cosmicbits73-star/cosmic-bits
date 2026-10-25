@@ -35,6 +35,7 @@ async def main():
             words.append((t, pos, pos + d))
             pos += d
 
+    # sottotitoli
     lines, cur = [], []
     for w in words:
         cur.append(w)
@@ -43,12 +44,24 @@ async def main():
             cur = []
     if cur:
         lines.append(cur)
-
     if lines:
         with open("subs.srt", "w", encoding="utf-8") as f:
             for i, ln in enumerate(lines, 1):
                 text = " ".join(w[0] for w in ln)
                 f.write(f"{i}\n{ts(ln[0][1])} --> {ts(ln[-1][2])}\n{text}\n\n")
     print("Righe di sottotitoli:", len(lines))
+
+    # istante in cui la voce inizia ogni segmento (per sincronizzare le clip)
+    segs = data["segments"]
+    if words:
+        counts = [len(s["text"].split()) for s in segs]
+        tot_s, tot_b = sum(counts), len(words)
+        cum, timeline = 0, []
+        for s, c in zip(segs, counts):
+            a = min(round(cum * tot_b / tot_s), tot_b - 1)
+            cum += c
+            timeline.append({"keyword": s["keyword"], "start": words[a][1]})
+        json.dump(timeline, open("timeline.json", "w"), indent=2)
+        print("Segmenti sincronizzati:", len(timeline))
 
 asyncio.run(main())

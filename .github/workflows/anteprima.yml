@@ -1,0 +1,39 @@
+name: Anteprima (senza pubblicare)
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: "Tipo di video"
+        type: choice
+        default: short
+        options:
+          - short
+          - long
+jobs:
+  anteprima:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installa ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - run: pip install google-genai edge-tts requests
+      - run: python generate.py ${{ inputs.kind }}
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+      - run: python voice.py ${{ inputs.kind }}
+      - run: python video.py ${{ inputs.kind }}
+        env:
+          PIXABAY_KEY: ${{ secrets.PIXABAY_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: anteprima-${{ github.run_id }}
+          path: |
+            video.mp4
+            out.json
+          retention-days: 1

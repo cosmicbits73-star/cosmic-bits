@@ -16,7 +16,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core
-      - run: pip install google-genai edge-tts requests
+      - run: pip install google-genai edge-tts requests pillow
       - run: python generate.py long
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
@@ -24,8 +24,10 @@ jobs:
       - run: python video.py long
         env:
           PIXABAY_KEY: ${{ secrets.PIXABAY_KEY }}
+      - name: Crea miniatura
+        run: python thumbnail.py
       - name: Pubblica su YouTube
-        run: python upload.py long public
+        run: python upload.py long
         env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}

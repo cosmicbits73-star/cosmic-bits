@@ -25,7 +25,7 @@ jobs:
         env:
           PIXABAY_KEY: ${{ secrets.PIXABAY_KEY }}
       - name: Pubblica su YouTube
-        run: python upload.py short public
+        run: python upload.py short
         env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}

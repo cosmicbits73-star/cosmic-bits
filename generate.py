@@ -78,11 +78,16 @@ Rules for the narration:
 
 Reply ONLY with JSON using these keys: topic (3-8 words naming the
 specific subject), title, description, hashtags (list), thumbnail_text,
-segments.
+hook_text, segments.
 
 "thumbnail_text" is a teaser for the video thumbnail: 2 to 4 WORDS in
 capital letters that trigger curiosity (for example "IT SHOULDN'T EXIST"),
 not a copy of the title.
+
+"hook_text" is a line written on screen during the first 3 seconds of the
+video, to stop people from scrolling away: 3 to 7 WORDS in capital letters,
+a surprising fact or a curious question about the topic (for example
+"ELECTRIC EELS SHOCK 600 VOLTS"). Only letters, numbers, ? and !, no quotes.
 
 "segments" is the whole narration split into consecutive parts, in
 order. {seg_rule} Each part is an object {{"text": "...", "keyword": "..."}}.
@@ -119,6 +124,8 @@ Read together, the texts form the complete narration."""
                 data["thumbnail_text"] = str(
                     data.get("thumbnail_text")
                     or " ".join(str(data.get("title", "")).split()[:4])).strip()
+                data["hook_text"] = str(
+                    data.get("hook_text") or data["thumbnail_text"]).strip()
                 nwords = len(data["script"].split())
                 if nwords < MIN_WORDS[kind]:
                     print(f"Testo troppo corto ({nwords} parole), riprovo")
@@ -145,4 +152,5 @@ if __name__ == "__main__":
     data = make(sys.argv[1])
     json.dump(data, open("out.json", "w"), indent=2)
     print(data["title"])
+    print("Frase d'apertura:", data["hook_text"])
     print("Segmenti:", len(data["segments"]), "- parole:", len(data["script"].split()))

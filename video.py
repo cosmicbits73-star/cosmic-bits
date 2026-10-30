@@ -8,7 +8,7 @@ GENERIC = ["space", "galaxy", "science"]
 MAXP = 6.0           # durata massima di una singola clip
 LEAD = 0.3           # la clip cambia un attimo prima che la voce dica il nuovo argomento
 HOOK_SECONDS = 2.8   # per quanti secondi resta la frase d'apertura (solo Shorts)
-MUSIC_VOLUME = 0.10  # volume della musica di sottofondo (la voce è 1.0)
+MUSIC_VOLUME = 0.18  # volume della musica di sottofondo (la voce è 1.0)
 
 def run(cmd):
     subprocess.run(cmd, check=True)

@@ -7,21 +7,42 @@ BAD = ("image", "tts", "live", "audio", "embedding", "robotics", "computer")
 HISTORY = "topics.json"
 MIN_WORDS = {"long": 700, "short": 80}
 
+# (argomento, peso): più alto = esce più spesso
 CATEGORIES = [
-    "black holes and extreme gravity", "planets and moons of our solar system",
-    "stars, supernovae and galaxies", "the human body", "physics paradoxes",
-    "space missions and astronauts", "strange chemistry and materials",
-    "deep ocean and Earth science", "time, light and relativity",
-    "the origin and fate of the universe", "alien life and exoplanets",
-    "animals with surprising abilities", "dinosaurs and ancient Earth",
-    "the human brain and sleep", "famous scientists and discoveries",
+    ("animals with surprising abilities", 4),
+    ("extreme animals and how they survive", 3),
+    ("deep ocean creatures and mysteries", 3),
+    ("famous scientists and their wild discoveries", 3),
+    ("famous astronauts, explorers and inventors", 2),
+    ("the human body", 2),
+    ("the human brain and sleep", 2),
+    ("dinosaurs and ancient Earth", 2),
+    ("strange chemistry and materials", 2),
+    ("alien life and exoplanets", 2),
+    ("space missions and astronauts", 2),
+    ("planets and moons of our solar system", 1),
+    ("black holes and extreme gravity", 1),
+    ("stars, supernovae and galaxies", 1),
+    ("physics paradoxes", 1),
+    ("time, light and relativity", 1),
+    ("the origin and fate of the universe", 1),
+    ("deep ocean and Earth science", 1),
 ]
+# (angolo, peso)
 ANGLES = [
-    "a shocking number or scale", "a common myth that is wrong",
-    "something that sounds fake but is true", "a what-if scenario",
-    "a recent scientific discovery", "a mystery nobody has solved yet",
-    "a comparison that blows the mind",
+    ("a common myth that is wrong", 4),
+    ("a what-if scenario", 4),
+    ("something that sounds fake but is true", 3),
+    ("a shocking number or scale", 2),
+    ("a mystery nobody has solved yet", 2),
+    ("a comparison that blows the mind", 2),
+    ("a recent scientific discovery", 1),
 ]
+
+def pick(options):
+    names = [o[0] for o in options]
+    weights = [o[1] for o in options]
+    return random.choices(names, weights=weights, k=1)[0]
 
 def load_history():
     try:
@@ -52,8 +73,9 @@ def accept(data, kind, history):
 def make(kind):
     history = load_history()
     past = [h["topic"] for h in history][-80:]
-    category = random.choice(CATEGORIES)
-    angle = random.choice(ANGLES)
+    category = pick(CATEGORIES)
+    angle = pick(ANGLES)
+    print("Categoria:", category, "- Angolo:", angle)
     if kind == "long":
         length = "between 850 and 950 words in total (never fewer than 800)"
         seg_rule = "Use at least 45 segments."

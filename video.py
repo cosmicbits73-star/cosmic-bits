@@ -5,9 +5,10 @@ W, H = (1080, 1920) if kind == "short" else (1920, 1080)
 data = json.load(open("out.json"))
 key = os.environ["PIXABAY_KEY"]
 GENERIC = ["space", "galaxy", "science"]
-MAXP = 6.0      # durata massima di una singola clip
-LEAD = 0.3      # la clip cambia un attimo prima che la voce dica il nuovo argomento
+MAXP = 6.0           # durata massima di una singola clip
+LEAD = 0.3           # la clip cambia un attimo prima che la voce dica il nuovo argomento
 HOOK_SECONDS = 2.8   # per quanti secondi resta la frase d'apertura (solo Shorts)
+MUSIC_VOLUME = 0.10  # volume della musica di sottofondo (la voce è 1.0)
 
 def run(cmd):
     subprocess.run(cmd, check=True)
@@ -154,23 +155,44 @@ if kind == "short":
                 f"enable='between(t,0,{HOOK_SECONDS})'")
         print("Frase d'apertura:", hook_text)
 
-chain = ",".join(x for x in (subs, hook) if x)
+# --- scritta fissa per invitare a iscriversi
+if kind == "short":
+    cta_pos, cta_size = "x=w-text_w-40:y=200", 44
+else:
+    cta_pos, cta_size = "x=40:y=40", 38
+cta = (f"drawtext=fontfile={font}:text='FOLLOW FOR MORE':"
+       f"fontcolor=white:fontsize={cta_size}:borderw=4:bordercolor=black:{cta_pos}")
+
+vchain = ",".join(x for x in (subs, hook, cta) if x)
+
+# --- montaggio finale: video + voce (+ musica) + logo
+has_logo = os.path.exists("logo.png")
+has_music = os.path.exists("music.mp3")
 
 cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
        "-i", "list.txt", "-i", "voice.mp3"]
-if os.path.exists("logo.png"):
+idx = 2
+fc = [f"[0:v]{vchain}[s]"]
+if has_logo:
+    cmd += ["-i", "logo.png"]
     lw = 250 if kind == "short" else 170
     pos = "40:150" if kind == "short" else "W-w-40:40"
-    first = f"[0:v]{chain}[s]" if chain else "[0:v]null[s]"
-    cmd += ["-i", "logo.png", "-filter_complex",
-            f"{first};[2:v]scale={lw}:-1,format=rgba[lg];[s][lg]overlay={pos}[v]",
-            "-map", "[v]", "-map", "1:a"]
+    fc.append(f"[{idx}:v]scale={lw}:-1,format=rgba[lg]")
+    fc.append(f"[s][lg]overlay={pos}[v]")
+    idx += 1
 else:
     brand = (f"drawtext=fontfile={font}:text='COSMIC BITS':"
              f"fontcolor=white:fontsize={H // 28}:borderw=3:x=w-tw-40:y=40")
-    vf = ",".join(x for x in (subs, hook, brand) if x)
-    cmd += ["-vf", vf, "-map", "0:v", "-map", "1:a"]
-cmd += ["-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+    fc.append(f"[s]{brand}[v]")
+amap = "1:a"
+if has_music:
+    print("Musica di sottofondo: music.mp3")
+    cmd += ["-stream_loop", "-1", "-i", "music.mp3"]
+    fc.append(f"[1:a]volume=1.0[va];[{idx}:a]volume={MUSIC_VOLUME}[ma];"
+              "[va][ma]amix=inputs=2:duration=first:dropout_transition=0,volume=2[a]")
+    amap = "[a]"
+cmd += ["-filter_complex", ";".join(fc), "-map", "[v]", "-map", amap,
+        "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-shortest", "video.mp4"]
 run(cmd)
 print("Video creato")

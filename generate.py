@@ -79,9 +79,13 @@ def make(kind):
     if kind == "long":
         length = "between 850 and 950 words in total (never fewer than 800)"
         seg_rule = "Use at least 45 segments."
+        mid_rule = ("- Around the middle of the narration, add ONE short, natural "
+                    "sentence inviting viewers to subscribe, for example "
+                    "\"If you're enjoying this, subscribe to Cosmic Bits.\"\n")
     else:
         length = "about 120 words in total"
         seg_rule = "Use 7 to 9 segments."
+        mid_rule = ""
     avoid = "; ".join(past) if past else "none yet"
     prompt = f"""You run a YouTube channel called Cosmic Bits about
 space and science facts. Write a narration in English, {length}.
@@ -95,7 +99,7 @@ Rules for the narration:
 - The LAST sentence must be a memorable punchline or mind-blowing
   closing thought, followed by a short call to action such as
   "Follow Cosmic Bits for more cosmic secrets."
-- Keep the middle fast-paced and easy to understand.
+{mid_rule}- Keep the middle fast-paced and easy to understand.
 - Every fact must be real and accurate.
 
 Reply ONLY with JSON using these keys: topic (3-8 words naming the

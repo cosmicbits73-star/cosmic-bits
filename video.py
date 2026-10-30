@@ -1,4 +1,4 @@
-import os, sys, json, subprocess, requests
+import os, sys, json, subprocess, requests, textwrap
 
 kind = sys.argv[1]
 W, H = (1080, 1920) if kind == "short" else (1920, 1080)
@@ -7,6 +7,7 @@ key = os.environ["PIXABAY_KEY"]
 GENERIC = ["space", "galaxy", "science"]
 MAXP = 6.0      # durata massima di una singola clip
 LEAD = 0.3      # la clip cambia un attimo prima che la voce dica il nuovo argomento
+HOOK_SECONDS = 2.8   # per quanti secondi resta la frase d'apertura (solo Shorts)
 
 def run(cmd):
     subprocess.run(cmd, check=True)
@@ -138,19 +139,36 @@ style = ("FontName=DejaVu Sans,Bold=1,FontSize=12,"
 subs = f"subtitles=subs.srt:force_style='{style}'" if os.path.exists("subs.srt") else None
 font = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
+# --- frase d'apertura a schermo (solo Shorts)
+hook = None
+if kind == "short":
+    hook_text = str(data.get("hook_text") or data.get("thumbnail_text") or "").strip().upper()
+    if hook_text:
+        with open("hook.txt", "w", encoding="utf-8") as f:
+            f.write(textwrap.fill(hook_text, 14))
+        hook = (f"drawtext=fontfile={font}:textfile=hook.txt:expansion=none:"
+                "fontcolor=white:fontsize=80:line_spacing=14:"
+                "borderw=5:bordercolor=black:"
+                "box=1:boxcolor=black@0.5:boxborderw=28:"
+                "x=(w-text_w)/2:y=h*0.25:"
+                f"enable='between(t,0,{HOOK_SECONDS})'")
+        print("Frase d'apertura:", hook_text)
+
+chain = ",".join(x for x in (subs, hook) if x)
+
 cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
        "-i", "list.txt", "-i", "voice.mp3"]
 if os.path.exists("logo.png"):
     lw = 250 if kind == "short" else 170
     pos = "40:150" if kind == "short" else "W-w-40:40"
-    first = f"[0:v]{subs}[s]" if subs else "[0:v]null[s]"
+    first = f"[0:v]{chain}[s]" if chain else "[0:v]null[s]"
     cmd += ["-i", "logo.png", "-filter_complex",
             f"{first};[2:v]scale={lw}:-1,format=rgba[lg];[s][lg]overlay={pos}[v]",
             "-map", "[v]", "-map", "1:a"]
 else:
     brand = (f"drawtext=fontfile={font}:text='COSMIC BITS':"
              f"fontcolor=white:fontsize={H // 28}:borderw=3:x=w-tw-40:y=40")
-    vf = f"{subs},{brand}" if subs else brand
+    vf = ",".join(x for x in (subs, hook, brand) if x)
     cmd += ["-vf", vf, "-map", "0:v", "-map", "1:a"]
 cmd += ["-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-shortest", "video.mp4"]

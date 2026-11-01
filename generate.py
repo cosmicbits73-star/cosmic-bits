@@ -95,7 +95,13 @@ Topics already covered, DO NOT repeat or closely resemble any of them: {avoid}.
 
 Rules for the narration:
 - The FIRST sentence must be a powerful hook that grabs attention in
-  under 3 seconds (a shocking claim or an intriguing question).
+  under 3 seconds (a shocking claim or an intriguing question), and it
+  must open a curiosity gap that is only answered near the END.
+- Write like a charismatic storyteller talking to ONE friend: short
+  punchy sentences (mostly under 14 words), say "you" often, use vivid
+  everyday comparisons, and never sound like an encyclopedia.
+- Around the middle add a twist with a phrase like "But here's the
+  crazy part" or "And it gets weirder".
 - The LAST sentence must be a memorable punchline or mind-blowing
   closing thought, followed by a short call to action such as
   "Follow Cosmic Bits for more cosmic secrets."
@@ -105,6 +111,18 @@ Rules for the narration:
 Reply ONLY with JSON using these keys: topic (3-8 words naming the
 specific subject), title, description, hashtags (list), thumbnail_text,
 hook_text, segments.
+
+"title" must be under 60 characters, must contain a phrase people really
+type into YouTube search (for example "black hole", "dying star",
+"paradox", "electric eel", "Newton") within its first 5 words, and must
+still spark curiosity. No clickbait lies.
+
+"description" must start with one sentence that contains the main search
+phrase, then 2 to 3 more sentences that naturally include related
+search terms.
+
+"hashtags" is a list of 4 to 6 hashtags: the specific subject, the broad
+subject, and 2 general ones such as #space or #science.
 
 "thumbnail_text" is a teaser for the video thumbnail: 2 to 4 WORDS in
 capital letters that trigger curiosity (for example "IT SHOULDN'T EXIST"),

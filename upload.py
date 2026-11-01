@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 # Orari di uscita (ora italiana). Modificali qui se vuoi cambiarli.
-SLOTS = {"long": ["08:00", "14:00", "20:00"],
-         "short": ["11:00", "17:00", "22:00"]}
+SLOTS = {"long": ["20:00"],
+         "short": ["08:00", "11:00", "14:00", "17:00", "22:00"]}
 ROME = ZoneInfo("Europe/Rome")
 
 def next_slot(kind, now=None):

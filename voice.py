@@ -92,7 +92,11 @@ async def main():
         t["start"] *= k
     json.dump(timeline, open("timeline.json", "w"), indent=2)
 
-    # sottotitoli
+    # tempi di ogni parola, usati per le scritte animate nel video
+    json.dump([[w, round(a, 3), round(b, 3)] for w, a, b in words],
+              open("words.json", "w"))
+
+    # sottotitoli semplici (riserva se le scritte animate non funzionano)
     lines, cur = [], []
     for w in words:
         cur.append(w)

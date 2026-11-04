@@ -218,5 +218,9 @@
   {
     "topic": "Voyager 1 Distance and Communication Delay",
     "kind": "short"
+  },
+  {
+    "topic": "Common swift non-stop flight endurance",
+    "kind": "short"
   }
 ]

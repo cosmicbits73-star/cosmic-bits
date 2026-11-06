@@ -282,5 +282,9 @@
   {
     "topic": "Astronauts and space suits survival",
     "kind": "short"
+  },
+  {
+    "topic": "Wernher von Braun Mars Prediction",
+    "kind": "long"
   }
 ]

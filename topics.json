@@ -470,5 +470,9 @@
   {
     "topic": "Arctic Tern Lifetime Migration Distance",
     "kind": "long"
+  },
+  {
+    "topic": "Magellan World Circumnavigation Myth",
+    "kind": "short"
   }
 ]
